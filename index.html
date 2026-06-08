@@ -277,6 +277,12 @@ function fmt(v){
   if(isNaN(n)) return String(v);
   return Math.round(n).toLocaleString('ru-RU');
 }
+function toNum(v){
+  if(v===''||v===null||v===undefined) return '';
+  var n=parseFloat(String(v));
+  if(isNaN(n)) return String(v);
+  return Math.round(n);
+}
 function raw(v){
   if(v===''||v===null||v===undefined) return '';
   var n=parseFloat(v);
@@ -423,11 +429,11 @@ function copyTSV(){
           hrStr,
           String(r.C||''),
           r.D===null||r.D===undefined?'':r.D,
-          raw(r.E)===''?'':Number(raw(r.E)),
-          raw(r.F)===''?'':Number(raw(r.F)),
+          toNum(r.E),
+          toNum(r.F),
           String(r.G===null||r.G===undefined?'':r.G),
-          raw(r.H)===''?'':Number(raw(r.H)),
-          raw(r.I)===''?'':Number(raw(r.I)),
+          toNum(r.H),
+          toNum(r.I),
           String(r.J===null||r.J===undefined?'':r.J)
         ]);
       }
