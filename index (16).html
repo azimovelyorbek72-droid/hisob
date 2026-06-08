@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abonentlar To'lov Hisobi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root{--bg:#F5F3EE;--surface:#FFF;--border:#D8D4CC;--bl:#EAE7E0;--text:#1A1916;--tm:#7A7770;--ac:#2D6A4F;--al:#E8F4EE;--ab:#95C8AC;--dn:#C0392B;--dl:#FDECEA;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;padding:40px 24px}
+  .hdr{max-width:1300px;margin:0 auto 32px;display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--border);padding-bottom:20px}
+  .hdr h1{font-size:22px;font-weight:600}
+  .hdr span{font-size:13px;color:var(--tm);font-family:var(--mono)}
+  .main{max-width:1300px;margin:0 auto}
+  .ugrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .ucard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .ucard h3{font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--tm);margin-bottom:12px}
+  .dz{border:1.5px dashed var(--border);border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg)}
+  .dz:hover,.dz.act{border-color:var(--ac);background:var(--al)}
+  .dz.ok{border-color:var(--ac);background:var(--al);border-style:solid}
+  .dico{width:36px;height:36px;margin:0 auto 10px;color:var(--tm)}
+  .dz.ok .dico{color:var(--ac)}
+  .dz p{font-size:13px;color:var(--tm)}
+  .dz.ok p{color:var(--ac);font-weight:500}
+  .dz small{font-size:11px;color:var(--tm);display:block;margin-top:4px;font-family:var(--mono)}
+  .hint{text-align:center;font-size:12px;color:var(--tm);margin-bottom:16px;font-family:var(--mono)}
+  .bcalc{width:100%;background:var(--ac);color:#fff;border:none;padding:13px;border-radius:8px;font-size:15px;font-weight:500;font-family:var(--sans);cursor:pointer;transition:opacity .15s}
+  .bcalc:hover:not(:disabled){opacity:.88}
+  .bcalc:disabled{opacity:.35;cursor:default}
+  .err{background:var(--dl);border:1px solid #F5B7B1;border-radius:8px;padding:12px 16px;font-size:13px;color:var(--dn);margin-top:12px;display:none}
+  .res{margin-top:28px;display:none}
+  .srow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .sc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+  .sc .lb{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+  .sc .vl{font-size:22px;font-weight:600;font-family:var(--mono)}
+  .sc.gr .vl{color:var(--ac)}
+  .tc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .ttb{padding:14px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bl);flex-wrap:wrap}
+  .ttb input{flex:1;min-width:160px;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px;font-family:var(--sans);background:var(--bg);color:var(--text);outline:none}
+  .ttb input:focus{border-color:var(--ac)}
+  .ttb input::placeholder{color:var(--tm)}
+  .bdl{background:var(--ac);color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:opacity .15s}
+  .bdl:hover{opacity:.85}
+  .copy-hint{background:var(--al);border:1px solid var(--ab);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ac);margin:0 16px 12px;display:none;line-height:1.6}
+  .frow{padding:10px 16px;display:flex;gap:8px;border-bottom:1px solid var(--bl);align-items:center;flex-wrap:wrap}
+  .flb{font-size:12px;color:var(--tm);margin-right:4px}
+  .fb{border:1px solid var(--border);background:var(--bg);border-radius:20px;padding:4px 12px;font-size:12px;font-family:var(--sans);cursor:pointer;color:var(--tm)}
+  .fb.on{background:var(--ac);border-color:var(--ac);color:#fff}
+  .tw{overflow-x:auto;max-height:500px;overflow-y:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--border);white-space:nowrap}
+  thead th.new{background:#dff0e8;color:var(--ac)}
+  tbody tr{border-bottom:1px solid var(--bl)}
+  tbody tr:hover{background:#FAFAF8}
+  tbody tr.changed td.nc{color:var(--ac);font-weight:600}
+  td{padding:8px 10px;vertical-align:middle;font-family:var(--mono);font-size:11px}
+  td.tf{font-family:var(--sans);font-size:12px;font-weight:500;max-width:180px;word-break:break-word}
+  td.tr{text-align:right}
+  td.nc{font-family:var(--mono)}
+  .er td{text-align:center;padding:40px;color:var(--tm);font-size:14px;font-family:var(--sans)}
+  .ti{padding:10px 16px;font-size:12px;color:var(--tm);border-top:1px solid var(--bl);font-family:var(--mono)}
+  @media(max-width:600px){.ugrid{grid-template-columns:1fr}.srow{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Abonentlar To'lov Hisobi</h1>
+  <span>QMCh to'lovlarini boshqarish tizimi</span>
+</div>
+<div class="main">
+  <div class="ugrid">
+    <div class="ucard">
+      <h3>1 — Baza fayli</h3>
+      <div class="dz" id="zb" onclick="document.getElementById('ib').click()"
+           ondragover="dov(event,'zb')" ondragleave="dlv('zb')" ondrop="ddp(event,'baza')">
+        <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+        </svg>
+        <p id="lb">Bosing yoki faylni torting</p>
+        <small>База listi bor .xlsx fayl</small>
+      </div>
+      <input type="file" id="ib" accept=".xlsx,.xls" style="display:none" onchange="lf(this,'baza')">
+    </div>
+    <div class="ucard">
+      <h3>2 — To'lovlar fayli (Рестр)</h3>
+      <div class="dz" id="zr" onclick="document.getElementById('ir').click()"
+           ondragover="dov(event,'zr')" ondragleave="dlv('zr')" ondrop="ddp(event,'restr')">
+        <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+        <p id="lr">Bosing yoki faylni torting</p>
+        <small>Рестр listi bor .xlsx fayl</small>
+      </div>
+      <input type="file" id="ir" accept=".xlsx,.xls" style="display:none" onchange="lf(this,'restr')">
+    </div>
+  </div>
+  <p class="hint">* Ikkala list bitta faylda bo'lsa — ikkalasiga ham shu faylni yuklang</p>
+  <button class="bcalc" id="bc" disabled onclick="calc()">Hisoblash</button>
+  <div class="err" id="eb"></div>
+  <div class="res" id="res">
+    <div class="srow">
+      <div class="sc"><div class="lb">Jami abonent</div><div class="vl" id="s1">—</div></div>
+      <div class="sc gr"><div class="lb">To'lov topilgan</div><div class="vl" id="s2">—</div></div>
+      <div class="sc"><div class="lb">Jami to'langan</div><div class="vl" id="s3">—</div></div>
+      <div class="sc"><div class="lb">Ko'rsatilgan</div><div class="vl" id="s4">—</div></div>
+    </div>
+    <div class="tc">
+      <div class="ttb">
+        <input type="text" id="sq" placeholder="F.I.Sh, hisob raqam yoki mahalla..." oninput="rend()">
+        <button class="bdl" id="bcopy" onclick="copyTSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Excelga nusxa olish
+        </button>
+      </div>
+      <div class="copy-hint" id="chint">
+        ✅ <strong>Nusxa olindi!</strong> Excel oching → A1 bosing → <strong>Ctrl+V</strong>
+      </div>
+      <div class="frow">
+        <span class="flb">Ko'rsatish:</span>
+        <button class="fb on" id="fa" onclick="sf('all')">Hammasi</button>
+        <button class="fb" id="fp" onclick="sf('paid')">To'laganlar</button>
+        <button class="fb" id="fu" onclick="sf('unpaid')">To'lamaganlar</button>
+        <button class="fb" id="fn" onclick="sf('neg')">Manfiy saldo</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>A — Ф.И.Ш</th>
+            <th>B — Ҳисоб рақами</th>
+            <th>C — Маҳалла</th>
+            <th>D — Яшовчилар</th>
+            <th class="tr">E — Салдо оҳири</th>
+            <th class="tr">F — Охирги тўлов суммаси</th>
+            <th>G — Охирги тўлов санаси</th>
+            <th class="new tr">H — Салдо оҳири 2</th>
+            <th class="new tr">I — Охирги тўлов суммаси 2</th>
+            <th class="new">J — Охирги тўлов санаси 2</th>
+          </tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <div class="ti" id="ti"></div>
+    </div>
+  </div>
+</div>
+<script>
+// Baza va Рестр ma'lumotlari
+var BAZA_ROWS = [];  // Har bir qator: {cols: [A,B,C,D,E,F,G], hr: hisob_raqam}
+var PM = {};         // To'lovlar: {hr: {total, lastSum, lastDate}}
+var RES = [];        // Natija
+var AF = 'all';
+
+function dov(e,id){e.preventDefault();document.getElementById(id).classList.add('act');}
+function dlv(id){document.getElementById(id).classList.remove('act');}
+function ddp(e,k){e.preventDefault();dlv(k==='baza'?'zb':'zr');var f=e.dataTransfer.files[0];if(f)pf(f,k);}
+function lf(el,k){if(el.files[0])pf(el.files[0],k);}
+
+function pf(file,k){
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      var wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true});
+      var sn = null, ii;
+      if(k==='baza'){
+        for(ii=0;ii<wb.SheetNames.length;ii++){
+          var nn=wb.SheetNames[ii];
+          if(nn.indexOf('\u0430\u0437\u0430')>-1||nn.toLowerCase().indexOf('baza')>-1){sn=nn;break;}
+        }
+        if(!sn) sn=wb.SheetNames[0];
+        // Bazani RAW ma'lumot sifatida o'qiymiz — ustun indekslari bo'yicha
+        var ws = wb.Sheets[sn];
+        var range = XLSX.utils.decode_range(ws['!ref']);
+        BAZA_ROWS = [];
+        // Birinchi qator — sarlavha (skip)
+        for(var rr = range.s.r+1; rr <= range.e.r; rr++){
+          var row = [];
+          for(var cc = 0; cc <= 6; cc++){  // A dan G gacha (0-6)
+            var cell = ws[XLSX.utils.encode_cell({r:rr, c:cc})];
+            if(!cell){ row.push(''); continue; }
+            // Formatlanmagan qiymat
+            if(cell.t === 'd') {
+              // Sana
+              var d = cell.v;
+              row.push(('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear());
+            } else if(cell.t === 'n') {
+              row.push(cell.v);  // Son
+            } else {
+              row.push(cell.v !== undefined ? cell.v : '');
+            }
+          }
+          // B ustun (index 1) — hisob raqam
+          var hr = String(row[1]||'').trim();
+          BAZA_ROWS.push({cols: row, hr: hr});
+        }
+        document.getElementById('lb').textContent = file.name + ' \u2014 ' + BAZA_ROWS.length + ' qator';
+        document.getElementById('zb').classList.add('ok');
+      } else {
+        for(ii=0;ii<wb.SheetNames.length;ii++){
+          var nn=wb.SheetNames[ii];
+          if(nn.indexOf('\u0435\u0441\u0442\u0440')>-1||nn.toLowerCase().indexOf('restr')>-1){sn=nn;break;}
+        }
+        if(!sn) sn=wb.SheetNames[0];
+        var ws = wb.Sheets[sn];
+        var range = XLSX.utils.decode_range(ws['!ref']);
+        // Рестр: Сумма(0), Ҳисоб рақами(1), Сана(2)
+        PM = {};
+        for(var rr = range.s.r+1; rr <= range.e.r; rr++){
+          var cSum  = ws[XLSX.utils.encode_cell({r:rr, c:0})];
+          var cHR   = ws[XLSX.utils.encode_cell({r:rr, c:1})];
+          var cSana = ws[XLSX.utils.encode_cell({r:rr, c:2})];
+          if(!cHR) continue;
+          var hr  = String(cHR.v||'').trim();
+          var sum = cSum ? (parseFloat(cSum.v)||0) : 0;
+          var sana = '';
+          if(cSana){
+            if(cSana.t==='d'){
+              var d=cSana.v;
+              sana=('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear();
+            } else {
+              sana = String(cSana.v||'');
+            }
+          }
+          if(!PM[hr]) PM[hr] = {total:0, lastSum:0, lastDate:''};
+          PM[hr].total += sum;
+          if(sana >= PM[hr].lastDate){ PM[hr].lastDate = sana; PM[hr].lastSum = sum; }
+        }
+        var cnt = Object.keys(PM).length;
+        document.getElementById('lr').textContent = file.name + ' \u2014 ' + cnt + ' ta hisob raqam';
+        document.getElementById('zr').classList.add('ok');
+      }
+      document.getElementById('bc').disabled = !(BAZA_ROWS.length && Object.keys(PM).length);
+      he();
+    }catch(ex){ se('Xato: '+ex.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function se(m){var b=document.getElementById('eb');b.style.display='block';b.textContent=m;}
+function he(){document.getElementById('eb').style.display='none';}
+function esc(s){return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(v){
+  if(v===''||v===null||v===undefined) return '';
+  var n=parseFloat(v);
+  if(isNaN(n)) return String(v);
+  return Math.round(n).toLocaleString('ru-RU');
+}
+function raw(v){
+  if(v===''||v===null||v===undefined) return '';
+  var n=parseFloat(v);
+  if(isNaN(n)) return String(v);
+  return Math.round(n);
+}
+
+function calc(){
+  he();
+  try{
+    if(!BAZA_ROWS.length) throw new Error('Baza fayli yuklanmagan');
+    if(!Object.keys(PM).length) throw new Error('Рестр fayli yuklanmagan');
+
+    RES = [];
+    var matched=0, totalPaid=0;
+
+    for(var bi=0; bi<BAZA_ROWS.length; bi++){
+      var brow = BAZA_ROWS[bi];
+      var hr   = brow.hr;
+      // A-G: aynan bazadan — hech narsa o'zgarmaydi
+      var A = brow.cols[0];  // Ф.И.Ш
+      var B = brow.cols[1];  // Ҳисоб рақами
+      var C = brow.cols[2];  // Маҳалла
+      var D = brow.cols[3];  // Яшовчилар сони
+      var E = brow.cols[4];  // Салдо оҳири
+      var F = brow.cols[5];  // Охирги тўлов суммаси
+      var G = brow.cols[6];  // Охирги тўлов санаси
+
+      var pay = PM[hr];
+      var H, I, J;
+
+      if(pay && pay.total > 0){
+        // To'lov topildi
+        H = (E !== '' && !isNaN(parseFloat(E))) ? (parseFloat(E) - pay.total) : E;
+        I = pay.lastSum;
+        J = pay.lastDate;
+        matched++;
+        totalPaid += pay.total;
+      } else {
+        // To'lov topilmadi — eski qiymatlar
+        H = E;
+        I = F;
+        J = G;
+      }
+
+      RES.push({
+        A:A, B:B, C:C, D:D, E:E, F:F, G:G,
+        H:H, I:I, J:J,
+        changed: !!(pay && pay.total > 0)
+      });
+    }
+
+    document.getElementById('s1').textContent = RES.length.toLocaleString('ru-RU');
+    document.getElementById('s2').textContent = matched.toLocaleString('ru-RU');
+    document.getElementById('s3').textContent = totalPaid.toLocaleString('ru-RU') + ' so\'m';
+    document.getElementById('res').style.display = 'block';
+    rend();
+  }catch(ex){ se(ex.message); }
+}
+
+function sf(f){
+  AF=f;
+  ['all','paid','unpaid','neg'].forEach(function(x,xi){
+    document.getElementById(['fa','fp','fu','fn'][xi]).className='fb'+(x===f?' on':'');
+  });
+  rend();
+}
+
+function gf(){
+  var q=(document.getElementById('sq').value||'').toLowerCase().trim();
+  return RES.filter(function(r){
+    if(AF==='paid'&&!r.changed) return false;
+    if(AF==='unpaid'&&r.changed) return false;
+    if(AF==='neg'){var n=parseFloat(r.H);if(isNaN(n)||n>=0)return false;}
+    if(q){
+      var a=String(r.A||'').toLowerCase();
+      var b=String(r.B||'');
+      var c=String(r.C||'').toLowerCase();
+      if(a.indexOf(q)<0&&b.indexOf(q)<0&&c.indexOf(q)<0)return false;
+    }
+    return true;
+  });
+}
+
+function rend(){
+  var fl=gf();
+  var sh=fl.slice(0,1000);
+  var tbody=document.getElementById('tb');
+  document.getElementById('s4').textContent=fl.length.toLocaleString('ru-RU');
+  if(!fl.length){
+    tbody.innerHTML='<tr class="er"><td colspan="10">Hech narsa topilmadi</td></tr>';
+    document.getElementById('ti').textContent='';
+    return;
+  }
+  var html='';
+  for(var ti=0;ti<sh.length;ti++){
+    var r=sh[ti];
+    html+='<tr'+(r.changed?' class="changed"':'')+'>';
+    html+='<td class="tf">'+esc(r.A)+'</td>';
+    html+='<td>\''+esc(r.B)+'</td>';
+    html+='<td>'+esc(r.C)+'</td>';
+    html+='<td class="tr">'+esc(String(r.D===null||r.D===undefined?'':r.D))+'</td>';
+    html+='<td class="tr">'+fmt(r.E)+'</td>';
+    html+='<td class="tr">'+fmt(r.F)+'</td>';
+    html+='<td>'+esc(String(r.G||''))+'</td>';
+    html+='<td class="nc tr">'+fmt(r.H)+'</td>';
+    html+='<td class="nc tr">'+fmt(r.I)+'</td>';
+    html+='<td class="nc">'+esc(String(r.J||''))+'</td>';
+    html+='</tr>';
+  }
+  tbody.innerHTML=html;
+  document.getElementById('ti').textContent=fl.length>1000
+    ?(fl.length.toLocaleString('ru-RU')+' ta natijadan 1000 tasi ko\'rsatildi')
+    :('Jami '+fl.length.toLocaleString('ru-RU')+' ta natija');
+}
+
+function copyTSV(){
+  if(!RES.length) return;
+  var fl=gf();
+  var btn=document.getElementById('bcopy');
+  var hint=document.getElementById('chint');
+
+  function q(v){
+    var s=String(v===null||v===undefined?'':v);
+    return '"'+s.replace(/"/g,'""')+'"';
+  }
+
+  var lines=[];
+  lines.push([
+    'Ф.И.Ш',
+    'Ҳисоб рақами',
+    'Маҳалла',
+    'Яшовчилар сони',
+    'Салдо оҳири',
+    'Оҳирги тӯлов суммаси',
+    'Оҳирги тӯлов санаси',
+    'Салдо оҳири 2',
+    'Оҳирги тӯлов суммаси 2',
+    'Оҳирги тӯлов санаси 2'
+  ].join('	'));
+
+  for(var xi=0;xi<fl.length;xi++){
+    var r=fl[xi];
+    lines.push([
+      q(r.A),
+      "'"+String(r.B||''),
+      q(r.C),
+      r.D===null||r.D===undefined?'':r.D,
+      raw(r.E),
+      raw(r.F),
+      q(r.G===null||r.G===undefined?'':r.G),
+      raw(r.H),
+      raw(r.I),
+      q(r.J===null||r.J===undefined?'':r.J)
+    ].join('	'));
+  }
+
+  var txt=lines.join('
+');
+
+  function ok(){
+    hint.style.display='block';
+    btn.textContent='✅ Nusxa olindi!';
+    setTimeout(function(){
+      hint.style.display='none';
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excelga nusxa olish';
+    },5000);
+  }
+
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok).catch(function(){fb(txt,ok);});
+  } else { fb(txt,ok); }
+}
+
+function fb(txt,cb){
+  var ta=document.createElement('textarea');
+  ta.value=txt;
+  ta.style.cssText='position:fixed;top:0;left:0;opacity:0;width:1px;height:1px;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try{ document.execCommand('copy'); cb(); }
+  catch(e){ se('Nusxa olishda xato.'); }
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
