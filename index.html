@@ -62,6 +62,10 @@
   .er td{text-align:center;padding:40px;color:var(--tm);font-size:14px;font-family:var(--sans)}
   .ti{padding:10px 16px;font-size:12px;color:var(--tm);border-top:1px solid var(--bl);font-family:var(--mono)}
   @media(max-width:600px){.ugrid{grid-template-columns:1fr}.srow{grid-template-columns:1fr 1fr}}
+  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  .dz.loading{border-color:var(--ac);background:var(--al);position:relative;}
+  .dz.loading::after{content:'';position:absolute;top:50%;left:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border:3px solid var(--al);border-top:3px solid var(--ac);border-radius:50%;animation:spin 0.8s linear infinite;}
+  .dz.loading p,.dz.loading small,.dz.loading svg{opacity:0;}
 </style>
 </head>
 <body>
@@ -113,11 +117,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
-          Excel yuklab olish
+          Excelga nusxa olish
         </button>
       </div>
       <div class="copy-hint" id="chint">
-        ✅ <strong>Excel fayl yuklab olindi!</strong>
+        ✅ <strong>Nusxa olindi!</strong> Excel oching → A1 bosing → <strong>Ctrl+V</strong>
       </div>
       <div class="frow">
         <span class="flb">Ko'rsatish:</span>
@@ -160,6 +164,9 @@ function ddp(e,k){e.preventDefault();dlv(k==='baza'?'zb':'zr');var f=e.dataTrans
 function lf(el,k){if(el.files[0])pf(el.files[0],k);}
 
 function pf(file,k){
+  // Loading animatsiyasi
+  var zoneId = k==='baza'?'zb':'zr';
+  document.getElementById(zoneId).classList.add('loading');
   var reader = new FileReader();
   reader.onload = function(ev){
     try{
@@ -197,6 +204,7 @@ function pf(file,k){
           BAZA_ROWS.push({cols: row, hr: hr});
         }
         document.getElementById('lb').textContent = file.name + ' \u2014 ' + BAZA_ROWS.length + ' qator';
+        document.getElementById('zb').classList.remove('loading');
         document.getElementById('zb').classList.add('ok');
       } else {
         for(ii=0;ii<wb.SheetNames.length;ii++){
@@ -230,6 +238,7 @@ function pf(file,k){
         }
         var cnt = Object.keys(PM).length;
         document.getElementById('lr').textContent = file.name + ' \u2014 ' + cnt + ' ta hisob raqam';
+        document.getElementById('zr').classList.remove('loading');
         document.getElementById('zr').classList.add('ok');
       }
       // Agar bitta faylda ikkala list bo'lsa, ikkala tomonga ham yuklansin
@@ -263,7 +272,7 @@ function pf(file,k){
       }
       document.getElementById('bc').disabled = !(BAZA_ROWS.length && Object.keys(PM).length);
       he();
-    }catch(ex){ se('Xato: '+ex.message); }
+    }catch(ex){ document.getElementById(k==='baza'?'zb':'zr').classList.remove('loading'); se('Xato: '+ex.message); }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -404,59 +413,52 @@ function copyTSV(){
   var fl=gf();
   var btn=document.getElementById('bcopy');
   var hint=document.getElementById('chint');
-  btn.disabled=true;
-  btn.textContent='Tayyorlanmoqda...';
-  setTimeout(function(){
-    try{
-      var aoa=[];
-      aoa.push([
-        'Ф.И.Ш',
-        'Ҳисоб рақами',
-        'Маҳалла',
-        'Яшовчилар сони',
-        'Салдо оҳири',
-        'Оҳирги тӯлов суммаси',
-        'Оҳирги тӯлов санаси',
-        'Салдо оҳири 2',
-        'Оҳирги тӯлов суммаси 2',
-        'Оҳирги тӯлов санаси 2'
-      ]);
-      for(var xi=0;xi<fl.length;xi++){
-        var r=fl[xi];
-        var hrStr={v:String(r.B||''),t:'s'};
-        aoa.push([
-          String(r.A||''),
-          hrStr,
-          String(r.C||''),
-          r.D===null||r.D===undefined?'':r.D,
-          toNum(r.E),
-          toNum(r.F),
-          String(r.G===null||r.G===undefined?'':r.G),
-          toNum(r.H),
-          toNum(r.I),
-          String(r.J===null||r.J===undefined?'':r.J)
-        ]);
-      }
-      var ws=XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols']=[{wch:40},{wch:16},{wch:25},{wch:8},{wch:14},{wch:16},{wch:14},{wch:14},{wch:16},{wch:14}];
-      var wb2=XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb2,'Натижа',ws);
-      var wbout=XLSX.write(wb2,{bookType:'xlsx',type:'base64'});
-      var link=document.createElement('a');
-      link.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+wbout;
-      link.download='Natija.xlsx';
-      link.style.display='none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      hint.style.display='block';
-      setTimeout(function(){hint.style.display='none';},4000);
-    }catch(ex){
-      se('Xato: '+ex.message);
-    }
-    btn.disabled=false;
-    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excel yuklab olish';
-  },50);
+
+  var lines=[];
+  lines.push([
+    'Ф.И.Ш',
+    'Ҳисоб рақами',
+    'Маҳалла',
+    'Яшовчилар сони',
+    'Салдо оҳири',
+    'Оҳирги тӯлов суммаси',
+    'Оҳирги тӯлов санаси',
+    'Салдо оҳири 2',
+    'Оҳирги тӯлов суммаси 2',
+    'Оҳирги тӯлов санаси 2'
+  ].join('	'));
+
+  for(var xi=0;xi<fl.length;xi++){
+    var r=fl[xi];
+    lines.push([
+      '"'+String(r.A||'').replace(/"/g,'""')+'"',
+      "'"+String(r.B||''),
+      '"'+String(r.C||'').replace(/"/g,'""')+'"',
+      String(r.D===null||r.D===undefined?'':r.D),
+      toNum(r.E),
+      toNum(r.F),
+      '"'+String(r.G===null||r.G===undefined?'':r.G)+'"',
+      toNum(r.H),
+      toNum(r.I),
+      '"'+String(r.J===null||r.J===undefined?'':r.J)+'"'
+    ].join('	'));
+  }
+
+  var txt=lines.join('
+');
+
+  function ok(){
+    hint.style.display='block';
+    btn.textContent='✅ Nusxa olindi!';
+    setTimeout(function(){
+      hint.style.display='none';
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excelga nusxa olish';
+    },5000);
+  }
+
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok).catch(function(){fb(txt,ok);});
+  } else { fb(txt,ok); }
 }
 
 function fb(txt,cb){
