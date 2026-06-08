@@ -62,10 +62,6 @@
   .er td{text-align:center;padding:40px;color:var(--tm);font-size:14px;font-family:var(--sans)}
   .ti{padding:10px 16px;font-size:12px;color:var(--tm);border-top:1px solid var(--bl);font-family:var(--mono)}
   @media(max-width:600px){.ugrid{grid-template-columns:1fr}.srow{grid-template-columns:1fr 1fr}}
-  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-  .dz.loading{border-color:var(--ac);background:var(--al);position:relative;}
-  .dz.loading::after{content:'';position:absolute;top:50%;left:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border:3px solid var(--al);border-top:3px solid var(--ac);border-radius:50%;animation:spin 0.8s linear infinite;}
-  .dz.loading p,.dz.loading small,.dz.loading svg{opacity:0;}
 </style>
 </head>
 <body>
@@ -164,9 +160,6 @@ function ddp(e,k){e.preventDefault();dlv(k==='baza'?'zb':'zr');var f=e.dataTrans
 function lf(el,k){if(el.files[0])pf(el.files[0],k);}
 
 function pf(file,k){
-  // Loading animatsiyasi
-  var zoneId = k==='baza'?'zb':'zr';
-  document.getElementById(zoneId).classList.add('loading');
   var reader = new FileReader();
   reader.onload = function(ev){
     try{
@@ -204,7 +197,6 @@ function pf(file,k){
           BAZA_ROWS.push({cols: row, hr: hr});
         }
         document.getElementById('lb').textContent = file.name + ' \u2014 ' + BAZA_ROWS.length + ' qator';
-        document.getElementById('zb').classList.remove('loading');
         document.getElementById('zb').classList.add('ok');
       } else {
         for(ii=0;ii<wb.SheetNames.length;ii++){
@@ -238,41 +230,11 @@ function pf(file,k){
         }
         var cnt = Object.keys(PM).length;
         document.getElementById('lr').textContent = file.name + ' \u2014 ' + cnt + ' ta hisob raqam';
-        document.getElementById('zr').classList.remove('loading');
         document.getElementById('zr').classList.add('ok');
-      }
-      // Agar bitta faylda ikkala list bo'lsa, ikkala tomonga ham yuklansin
-      if(k==='baza' && Object.keys(PM).length===0){
-        // Рестр listini ham shu fayldan qidirish
-        for(var ri=0;ri<wb.SheetNames.length;ri++){
-          var rn=wb.SheetNames[ri];
-          if(rn.indexOf('естр')>-1||rn.toLowerCase().indexOf('restr')>-1){
-            var rws=wb.Sheets[rn];
-            var rrange=XLSX.utils.decode_range(rws['!ref']);
-            PM={};
-            for(var rrr=rrange.s.r+1;rrr<=rrange.e.r;rrr++){
-              var rcSum=rws[XLSX.utils.encode_cell({r:rrr,c:0})];
-              var rcHR=rws[XLSX.utils.encode_cell({r:rrr,c:1})];
-              var rcSana=rws[XLSX.utils.encode_cell({r:rrr,c:2})];
-              if(!rcHR)continue;
-              var rhr=String(rcHR.v||'').trim();
-              var rsum=rcSum?(parseFloat(rcSum.v)||0):0;
-              var rsana='';
-              if(rcSana){if(rcSana.t==='d'){var rd=rcSana.v;rsana=('0'+rd.getDate()).slice(-2)+'.'+('0'+(rd.getMonth()+1)).slice(-2)+'.'+rd.getFullYear();}else{rsana=String(rcSana.v||'');}}
-              if(!PM[rhr])PM[rhr]={total:0,lastSum:0,lastDate:''};
-              PM[rhr].total+=rsum;
-              if(rsana>=PM[rhr].lastDate){PM[rhr].lastDate=rsana;PM[rhr].lastSum=rsum;}
-            }
-            var rcnt=Object.keys(PM).length;
-            document.getElementById('lr').textContent=file.name+' — '+rcnt+' ta hisob raqam';
-            document.getElementById('zr').classList.add('ok');
-            break;
-          }
-        }
       }
       document.getElementById('bc').disabled = !(BAZA_ROWS.length && Object.keys(PM).length);
       he();
-    }catch(ex){ document.getElementById(k==='baza'?'zb':'zr').classList.remove('loading'); se('Xato: '+ex.message); }
+    }catch(ex){ se('Xato: '+ex.message); }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -285,12 +247,6 @@ function fmt(v){
   var n=parseFloat(v);
   if(isNaN(n)) return String(v);
   return Math.round(n).toLocaleString('ru-RU');
-}
-function toNum(v){
-  if(v===''||v===null||v===undefined) return '';
-  var n=parseFloat(String(v));
-  if(isNaN(n)) return String(v);
-  return Math.round(n);
 }
 function raw(v){
   if(v===''||v===null||v===undefined) return '';
@@ -411,51 +367,45 @@ function rend(){
 function copyTSV(){
   if(!RES.length) return;
   var fl=gf();
-  var btn=document.getElementById('bcopy');
-  var hint=document.getElementById('chint');
-
   var lines=[];
   lines.push([
-    'Ф.И.Ш',
-    'Ҳисоб рақами',
-    'Маҳалла',
-    'Яшовчилар сони',
-    'Салдо оҳири',
-    'Оҳирги тӯлов суммаси',
-    'Оҳирги тӯлов санаси',
-    'Салдо оҳири 2',
-    'Оҳирги тӯлов суммаси 2',
-    'Оҳирги тӯлов санаси 2'
-  ].join('	'));
-
+    '\u0424.\u0418.\u0428',
+    '\u04b2\u0438\u0441\u043e\u0431 \u0440\u0430\u049b\u0430\u043c\u0438',
+    '\u041c\u0430\u04b3\u0430\u043b\u043b\u0430',
+    '\u042f\u0448\u043e\u0432\u0447\u0438\u043b\u0430\u0440 \u0441\u043e\u043d\u0438',
+    '\u0421\u0430\u043b\u0434\u043e \u043e\u04b3\u0438\u0440\u0438',
+    '\u041e\u04b3\u0438\u0440\u0433\u0438 \u0442\u04ef\u043b\u043e\u0432 \u0441\u0443\u043c\u043c\u0430\u0441\u0438',
+    '\u041e\u04b3\u0438\u0440\u0433\u0438 \u0442\u04ef\u043b\u043e\u0432 \u0441\u0430\u043d\u0430\u0441\u0438',
+    '\u0421\u0430\u043b\u0434\u043e \u043e\u04b3\u0438\u0440\u0438 2',
+    '\u041e\u04b3\u0438\u0440\u0433\u0438 \u0442\u04ef\u043b\u043e\u0432 \u0441\u0443\u043c\u043c\u0430\u0441\u0438 2',
+    '\u041e\u04b3\u0438\u0440\u0433\u0438 \u0442\u04ef\u043b\u043e\u0432 \u0441\u0430\u043d\u0430\u0441\u0438 2'
+  ].join('\t'));
   for(var xi=0;xi<fl.length;xi++){
     var r=fl[xi];
     lines.push([
       '"'+String(r.A||'').replace(/"/g,'""')+'"',
       "'"+String(r.B||''),
       '"'+String(r.C||'').replace(/"/g,'""')+'"',
-      String(r.D===null||r.D===undefined?'':r.D),
-      toNum(r.E),
-      toNum(r.F),
-      '"'+String(r.G===null||r.G===undefined?'':r.G)+'"',
-      toNum(r.H),
-      toNum(r.I),
-      '"'+String(r.J===null||r.J===undefined?'':r.J)+'"'
-    ].join('	'));
+      r.D===null||r.D===undefined?'':r.D,
+      raw(r.E),
+      raw(r.F),
+      r.G===null||r.G===undefined?'':r.G,
+      raw(r.H),
+      raw(r.I),
+      r.J===null||r.J===undefined?'':r.J
+    ].join('\t'));
   }
-
-  var txt=lines.join('
-');
-
+  var txt=lines.join('\n');
+  var btn=document.getElementById('bcopy');
+  var hint=document.getElementById('chint');
   function ok(){
     hint.style.display='block';
-    btn.textContent='✅ Nusxa olindi!';
+    btn.textContent='\u2705 Nusxa olindi!';
     setTimeout(function(){
       hint.style.display='none';
       btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excelga nusxa olish';
     },5000);
   }
-
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(ok).catch(function(){fb(txt,ok);});
   } else { fb(txt,ok); }
