@@ -113,11 +113,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
-          Excelga nusxa olish
+          Excel yuklab olish
         </button>
       </div>
       <div class="copy-hint" id="chint">
-        ✅ <strong>Nusxa olindi!</strong> Excel oching → A1 bosing → <strong>Ctrl+V</strong>
+        ✅ <strong>Excel fayl yuklab olindi!</strong>
       </div>
       <div class="frow">
         <span class="flb">Ko'rsatish:</span>
@@ -231,6 +231,35 @@ function pf(file,k){
         var cnt = Object.keys(PM).length;
         document.getElementById('lr').textContent = file.name + ' \u2014 ' + cnt + ' ta hisob raqam';
         document.getElementById('zr').classList.add('ok');
+      }
+      // Agar bitta faylda ikkala list bo'lsa, ikkala tomonga ham yuklansin
+      if(k==='baza' && Object.keys(PM).length===0){
+        // Рестр listini ham shu fayldan qidirish
+        for(var ri=0;ri<wb.SheetNames.length;ri++){
+          var rn=wb.SheetNames[ri];
+          if(rn.indexOf('естр')>-1||rn.toLowerCase().indexOf('restr')>-1){
+            var rws=wb.Sheets[rn];
+            var rrange=XLSX.utils.decode_range(rws['!ref']);
+            PM={};
+            for(var rrr=rrange.s.r+1;rrr<=rrange.e.r;rrr++){
+              var rcSum=rws[XLSX.utils.encode_cell({r:rrr,c:0})];
+              var rcHR=rws[XLSX.utils.encode_cell({r:rrr,c:1})];
+              var rcSana=rws[XLSX.utils.encode_cell({r:rrr,c:2})];
+              if(!rcHR)continue;
+              var rhr=String(rcHR.v||'').trim();
+              var rsum=rcSum?(parseFloat(rcSum.v)||0):0;
+              var rsana='';
+              if(rcSana){if(rcSana.t==='d'){var rd=rcSana.v;rsana=('0'+rd.getDate()).slice(-2)+'.'+('0'+(rd.getMonth()+1)).slice(-2)+'.'+rd.getFullYear();}else{rsana=String(rcSana.v||'');}}
+              if(!PM[rhr])PM[rhr]={total:0,lastSum:0,lastDate:''};
+              PM[rhr].total+=rsum;
+              if(rsana>=PM[rhr].lastDate){PM[rhr].lastDate=rsana;PM[rhr].lastSum=rsum;}
+            }
+            var rcnt=Object.keys(PM).length;
+            document.getElementById('lr').textContent=file.name+' — '+rcnt+' ta hisob raqam';
+            document.getElementById('zr').classList.add('ok');
+            break;
+          }
+        }
       }
       document.getElementById('bc').disabled = !(BAZA_ROWS.length && Object.keys(PM).length);
       he();
@@ -369,57 +398,59 @@ function copyTSV(){
   var fl=gf();
   var btn=document.getElementById('bcopy');
   var hint=document.getElementById('chint');
-
-  function q(v){
-    var s=String(v===null||v===undefined?'':v);
-    return '"'+s.replace(/"/g,'""')+'"';
-  }
-
-  var lines=[];
-  lines.push([
-    'Ф.И.Ш',
-    'Ҳисоб рақами',
-    'Маҳалла',
-    'Яшовчилар сони',
-    'Салдо оҳири',
-    'Оҳирги тӯлов суммаси',
-    'Оҳирги тӯлов санаси',
-    'Салдо оҳири 2',
-    'Оҳирги тӯлов суммаси 2',
-    'Оҳирги тӯлов санаси 2'
-  ].join('	'));
-
-  for(var xi=0;xi<fl.length;xi++){
-    var r=fl[xi];
-    lines.push([
-      q(r.A),
-      "'"+String(r.B||''),
-      q(r.C),
-      r.D===null||r.D===undefined?'':r.D,
-      raw(r.E),
-      raw(r.F),
-      q(r.G===null||r.G===undefined?'':r.G),
-      raw(r.H),
-      raw(r.I),
-      q(r.J===null||r.J===undefined?'':r.J)
-    ].join('	'));
-  }
-
-  var txt=lines.join('
-');
-
-  function ok(){
-    hint.style.display='block';
-    btn.textContent='✅ Nusxa olindi!';
-    setTimeout(function(){
-      hint.style.display='none';
-      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excelga nusxa olish';
-    },5000);
-  }
-
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(ok).catch(function(){fb(txt,ok);});
-  } else { fb(txt,ok); }
+  btn.disabled=true;
+  btn.textContent='Tayyorlanmoqda...';
+  setTimeout(function(){
+    try{
+      var aoa=[];
+      aoa.push([
+        'Ф.И.Ш',
+        'Ҳисоб рақами',
+        'Маҳалла',
+        'Яшовчилар сони',
+        'Салдо оҳири',
+        'Оҳирги тӯлов суммаси',
+        'Оҳирги тӯлов санаси',
+        'Салдо оҳири 2',
+        'Оҳирги тӯлов суммаси 2',
+        'Оҳирги тӯлов санаси 2'
+      ]);
+      for(var xi=0;xi<fl.length;xi++){
+        var r=fl[xi];
+        var hrStr={v:String(r.B||''),t:'s'};
+        aoa.push([
+          String(r.A||''),
+          hrStr,
+          String(r.C||''),
+          r.D===null||r.D===undefined?'':r.D,
+          raw(r.E)===''?'':Number(raw(r.E)),
+          raw(r.F)===''?'':Number(raw(r.F)),
+          String(r.G===null||r.G===undefined?'':r.G),
+          raw(r.H)===''?'':Number(raw(r.H)),
+          raw(r.I)===''?'':Number(raw(r.I)),
+          String(r.J===null||r.J===undefined?'':r.J)
+        ]);
+      }
+      var ws=XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols']=[{wch:40},{wch:16},{wch:25},{wch:8},{wch:14},{wch:16},{wch:14},{wch:14},{wch:16},{wch:14}];
+      var wb2=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb2,'Натижа',ws);
+      var wbout=XLSX.write(wb2,{bookType:'xlsx',type:'base64'});
+      var link=document.createElement('a');
+      link.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+wbout;
+      link.download='Natija.xlsx';
+      link.style.display='none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      hint.style.display='block';
+      setTimeout(function(){hint.style.display='none';},4000);
+    }catch(ex){
+      se('Xato: '+ex.message);
+    }
+    btn.disabled=false;
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Excel yuklab olish';
+  },50);
 }
 
 function fb(txt,cb){
